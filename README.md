@@ -23,4 +23,4 @@ To run your own version of Llama Talk, you'll need to:
   - Create a table called "scores"
 - Create a bot in Telegram
 - Set the local.settings.json file to have settings for AzureStorageConnectionString (the Azure Storage Account connection string) and TelegramAPIKey (the key for the telegram bot).
-- You must register the app with a web hook on telegram. In your browser, go to: https://api.telegram.org/bot<BOT_API_KEY>/setWebHook?url=https://llamabot.azurewebsites.net/api/llamabot?key=<BOT_API_KEY>
+- You must register the app with a web hook on telegram. In your browser, go to: https://api.telegram.org/bot<BOT_API_KEY>/setWebHook?url=https://<YOUR_FUNCTION_APP>.azurewebsites.net/api/llamabot?key=<BOT_API_KEY>
