@@ -54,6 +54,19 @@ namespace LLamaBot
             }
         }
 
+        public async Task DeleteScore(long groupId, int userId)
+        {
+            var op = TableOperation.Retrieve<LLamaEntity>(GetDefaultPartitionKey(groupId), userId.ToString());
+            TableResult result = await Table.ExecuteAsync(op);
+            LLamaEntity entity = result.Result as LLamaEntity;
+
+            if (entity != null)
+            {
+                var deleteOp = TableOperation.Delete(entity);
+                await Table.ExecuteAsync(deleteOp);
+            }
+        }
+
         public async Task<List<LLamaEntity>> GetStatus(long groupId)
         {
             string filter = TableQuery.GenerateFilterCondition(nameof(LLamaEntity.PartitionKey), QueryComparisons.Equal, GetDefaultPartitionKey(groupId));

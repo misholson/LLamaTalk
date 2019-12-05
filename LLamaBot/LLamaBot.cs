@@ -50,13 +50,15 @@ namespace LLamaBot
 
                     // Here's the text. Should parse out possible commands.
                     string text = message.Text;
+                    string botName = Environment.GetEnvironmentVariable("BotName");
 
-                    var match = Regex.Match(text, @"\/(\w+)(\s+(.*))?");
+                    var match = Regex.Match(text, $"\\/(\\w+)({botName})?(\\s+(.*))?");
 
                     if (match.Success)
                     {
                         string command = match.Groups[1].Value.ToLower();
-                        string parameters = match.Groups.Count > 3 ? match.Groups[3].Value : null;
+                        string parameter = match.Groups.Count > 3 ? match.Groups[3].Value : null;
+                        string[] parameters = parameter.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
                         switch (command)
                         {
@@ -87,19 +89,46 @@ namespace LLamaBot
             return new OkObjectResult($"Success");
         }
 
-        public static async Task RecordScore(long groupId, string parameter, int userId, string firstName, string lastName)
+        public static async Task RecordScore(long groupId, string[] parameters, int userId, string firstName, string lastName)
         {
             // This gets a request for number of users in a channel. Subtract one for the bot.
             int usersCount = await botClient.GetChatMembersCountAsync(new ChatId(groupId)) - 1;
 
-            LLamaTable table = new LLamaTable();
-            if (int.TryParse(parameter, out int score))
+            string parameter = "";
+            if (parameters.Length > 0)
             {
-                await table.AddScore(groupId, userId, score);
-                var results = await table.GetStatus(groupId);
-                if (results.Count >= usersCount - 1)
+                parameter = parameters[0];
+            }
+
+            LLamaTable table = new LLamaTable();
+            if (parameter.ToLower() == "delete")
+            {
+                await table.DeleteScore(groupId, userId);
+            }
+            else if (int.TryParse(parameter, out int score))
+            {
+                if (score < 0 || score > 6)
                 {
-                    await SendStatusMessage(results, groupId);
+                    await botClient.SendTextMessageAsync(
+                        chatId: groupId,
+                        text: $"Score must be from 0-6. (invalid score {parameter})"
+                        );
+                }
+                else
+                {
+                    await table.AddScore(groupId, userId, score);
+                    var results = await table.GetStatus(groupId);
+                    if (results.Count >= usersCount)
+                    {
+                        await SendStatusMessage(results, groupId);
+                    }
+                    else if (results.Count == usersCount - 1)
+                    {
+                        await botClient.SendTextMessageAsync(
+                            chatId: groupId,
+                            text: $"{results.Count} out of {usersCount} players have submitted. One more submission remaining!"
+                            );
+                    }
                 }
             }
         }
