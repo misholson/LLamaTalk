@@ -16,7 +16,7 @@ namespace LLamaBot
         {
             get
             {
-                return DateTime.UtcNow.AddHours(-6).Date;
+                return DateTime.UtcNow.AddHours(-5).Date;
             }
         }
 

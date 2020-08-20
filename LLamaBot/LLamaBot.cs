@@ -52,30 +52,33 @@ namespace LLamaBot
                     string text = message.Text;
                     string botName = Environment.GetEnvironmentVariable("BotName");
 
-                    var match = Regex.Match(text, $"\\/(\\w+)({botName})?(\\s+(.*))?");
-
-                    if (match.Success)
+                    if (!string.IsNullOrEmpty(text))
                     {
-                        string command = match.Groups[1].Value.ToLower();
-                        string parameter = match.Groups.Count > 3 ? match.Groups[3].Value : null;
-                        string[] parameters = parameter.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        var match = Regex.Match(text, $"\\/(\\w+)({botName})?(\\s+(.*))?");
 
-                        switch (command)
+                        if (match.Success)
                         {
-                            case "score":
-                                await RecordScore(channelId, parameters, message.From.Id, message.From.FirstName, message.From.LastName);
-                                break;
-                            case "help":
-                            case "start":
-                                await SendHelp(channelId);
-                                break;
-                            case "status":
-                                await SendStatus(channelId);
-                                break;
-                            case "settings":
-                                break;
-                            default:
-                                break;
+                            string command = match.Groups[1].Value.ToLower();
+                            string parameter = match.Groups.Count > 3 ? match.Groups[3].Value : null;
+                            string[] parameters = parameter.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                            switch (command)
+                            {
+                                case "score":
+                                    await RecordScore(channelId, parameters, message.From.Id, message.From.FirstName, message.From.LastName);
+                                    break;
+                                case "help":
+                                case "start":
+                                    await SendHelp(channelId);
+                                    break;
+                                case "status":
+                                    await SendStatus(channelId);
+                                    break;
+                                case "settings":
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
                 }
