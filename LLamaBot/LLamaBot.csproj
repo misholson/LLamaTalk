@@ -63,6 +63,10 @@
     <None Remove="obj\Release\netcoreapp2.1\PubTmp\Out\bin\System.Runtime.CompilerServices.Unsafe.dll" />
     <None Remove="obj\Release\netcoreapp2.1\PubTmp\Out\bin\System.Text.Encodings.Web.dll" />
     <None Remove="obj\Release\netcoreapp2.1\PubTmp\Out\bin\Telegram.Bot.dll" />
+    <None Remove="local.settings.json" />
+    <None Remove="obj\Release\netcoreapp2.1\PubTmp\Out\runtimes\unix\lib\netstandard1.3\System.Text.Encoding.CodePages.dll" />
+    <None Remove="obj\Release\netcoreapp2.1\PubTmp\Out\runtimes\win\lib\netstandard1.3\System.Text.Encoding.CodePages.dll" />
+    <None Remove="local.settings.json" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
@@ -70,7 +74,11 @@
     </None>
     <None Update="local.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

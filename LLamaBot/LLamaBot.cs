@@ -36,6 +36,10 @@ namespace LLamaBot
             try
             {
                 string body = await req.ReadAsStringAsync();
+                if (Environment.GetEnvironmentVariable("LogRequest") == "true")
+                {
+                    log.LogInformation(body);
+                }
                 Update update = JsonConvert.DeserializeObject<Update>(body);
 
                 if (update != null)
@@ -88,7 +92,6 @@ namespace LLamaBot
                 log.LogError(e.Message);
                 return new StatusCodeResult(500);
             }
-
             return new OkObjectResult($"Success");
         }
 
@@ -163,7 +166,7 @@ This bot supports the following commands:
             List<Task<ChatMember>> chatMemberTasks = new List<Task<ChatMember>>();
             foreach (var entity in entities)
             {
-                chatMemberTasks.Add(botClient.GetChatMemberAsync(chatId: groupId, userId: entity.UserId));
+                chatMemberTasks.Add(GetChatMember(groupId, entity));
             }
             ChatMember[] chatMembers = await Task.WhenAll<ChatMember>(chatMemberTasks);
 
@@ -181,6 +184,10 @@ This bot supports the following commands:
                 {
                     sb.AppendLine($"  {chatMember.User.FirstName} {chatMember.User.LastName} - {score}");
                 }
+                else
+                {
+                    sb.AppendLine($"  User {entities[i].UserId} - {score}");
+                }
             }
 
             if (entities.Count >= usersCount)
@@ -194,6 +201,18 @@ This bot supports the following commands:
                 chatId: groupId,
                 text: sb.ToString()
                 );
+        }
+
+        private static async Task<ChatMember> GetChatMember(long groupId, LLamaEntity entity)
+        {
+            try
+            {
+                return await botClient.GetChatMemberAsync(chatId: groupId, userId: entity.UserId);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }
