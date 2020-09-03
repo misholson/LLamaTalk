@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -52,50 +53,71 @@ namespace LLamaBot
                     // The channel/group the bot is in.
                     long channelId = message.Chat.Id;
 
-                    // Here's the text. Should parse out possible commands.
-                    string text = message.Text;
-                    string botName = Environment.GetEnvironmentVariable("BotName");
-
-                    if (!string.IsNullOrEmpty(text))
+                    try
                     {
-                        var match = Regex.Match(text, $"\\/(\\w+)({botName})?(\\s+(.*))?");
+                        // Here's the text. Should parse out possible commands.
+                        string text = message.Text;
+                        string botName = Environment.GetEnvironmentVariable("BotName");
 
-                        if (match.Success)
+                        if (!string.IsNullOrEmpty(text))
                         {
-                            string command = match.Groups[1].Value.ToLower();
-                            string parameter = match.Groups.Count > 3 ? match.Groups[3].Value : null;
-                            string[] parameters = parameter.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var match = Regex.Match(text, $"\\/(\\w+)({botName})?(\\s+(.*))?");
 
-                            switch (command)
+                            if (match.Success)
                             {
-                                case "score":
-                                    await RecordScore(channelId, parameters, message.From.Id, message.From.FirstName, message.From.LastName);
-                                    break;
-                                case "help":
-                                case "start":
-                                    await SendHelp(channelId);
-                                    break;
-                                case "status":
-                                    await SendStatus(channelId);
-                                    break;
-                                case "settings":
-                                    break;
-                                default:
-                                    break;
+                                string command = match.Groups[1].Value.ToLower();
+                                string parameter = match.Groups.Count > 3 ? match.Groups[3].Value : null;
+                                string[] parameters = parameter.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                                switch (command)
+                                {
+                                    case "score":
+                                        int userId = message.From.Id;
+                                        if (parameters.Length > 1)
+                                        {
+                                            MessageEntity mentionEntity = message.Entities?.FirstOrDefault(me => me.Type == Telegram.Bot.Types.Enums.MessageEntityType.TextMention);
+                                            if (mentionEntity?.User != null)
+                                            {
+                                                userId = mentionEntity.User.Id;
+                                            }
+                                        }
+                                        await RecordScore(channelId, parameters, userId);
+                                        break;
+                                    case "help":
+                                    case "start":
+                                        await SendHelp(channelId);
+                                        break;
+                                    case "status":
+                                        await SendStatus(channelId);
+                                        break;
+                                    case "settings":
+                                        break;
+                                    default:
+                                        break;
+                                }
                             }
                         }
+                    }
+                    catch (Exception commandException)
+                    {
+                        log.LogError(commandException.Message);
+                        await botClient.SendTextMessageAsync(
+                            chatId: channelId,
+                            text: $"Error processing command \"{message.Text}\": {commandException.Message}"
+                            );
+                        return new StatusCodeResult(200);
                     }
                 }
             }
             catch (Exception e)
             {
                 log.LogError(e.Message);
-                return new StatusCodeResult(500);
+                return new StatusCodeResult(200);
             }
             return new OkObjectResult($"Success");
         }
 
-        public static async Task RecordScore(long groupId, string[] parameters, int userId, string firstName, string lastName)
+        public static async Task RecordScore(long groupId, string[] parameters, int userId)
         {
             // This gets a request for number of users in a channel. Subtract one for the bot.
             int usersCount = await botClient.GetChatMembersCountAsync(new ChatId(groupId)) - 1;
@@ -111,9 +133,15 @@ namespace LLamaBot
             {
                 await table.DeleteScore(groupId, userId);
             }
-            else if (int.TryParse(parameter, out int score))
+            else
             {
-                if (score < 0 || score > 6)
+                int score = -2;
+                if (!int.TryParse(parameter, out score))
+                {
+                    score = -1;
+                }
+
+                if (score < -1 || score > 6)
                 {
                     await botClient.SendTextMessageAsync(
                         chatId: groupId,
@@ -180,13 +208,19 @@ This bot supports the following commands:
                 int score = entities[i].Score;
                 ChatMember chatMember = chatMembers[i];
 
+                string scoreString = score.ToString();
+                if (score == -1)
+                {
+                    scoreString = "hidden";
+                }
+
                 if (chatMember != null)
                 {
-                    sb.AppendLine($"  {chatMember.User.FirstName} {chatMember.User.LastName} - {score}");
+                    sb.AppendLine($"  {chatMember.User.FirstName} {chatMember.User.LastName} - {scoreString}");
                 }
                 else
                 {
-                    sb.AppendLine($"  User {entities[i].UserId} - {score}");
+                    sb.AppendLine($"  User {entities[i].UserId} - {scoreString}");
                 }
             }
 
