@@ -224,10 +224,14 @@ This bot supports the following commands:
                 }
             }
 
+            sb.AppendLine("");
             if (entities.Count >= usersCount)
             {
-                sb.AppendLine("");
                 sb.AppendLine("All users have submitted. You can now discuss today's questions!");
+            }
+            else
+            {
+                sb.AppendLine($"{entities.Count} out of {usersCount} players have submitted.");
             }
 
 
